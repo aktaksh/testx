@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: mongodb
+  name: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: mongodb
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: mongodb
+    spec:
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: mongodb-storage
+      securityContext:
+        fsGroup: 1001
+      containers:
+      - env:
+        - name: MONGODB_PASSWORD
+          value: orders-password
+        - name: MONGODB_ROOT_PASSWORD
+          value: root
+        - name: MONGODB_USERNAME
+          value: orders-user
+        - name: MONGODB_DATABASE
+          value: akschallenge
+        image: docker.io/bitnami/mongodb:4.2.4-debian-10-r0
+        name: mongodb
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: data
+          mountPath: /bitnami/mongodb

@@ -1,0 +1,61 @@
+# This workflow will build and push a node.js application to an Azure Web App when a release is created.
+#
+# This workflow assumes you have already created the target Azure App Service web app.
+# For instructions see https://docs.microsoft.com/azure/app-service/app-service-plan-manage#create-an-app-service-plan
+#
+# To configure this workflow:
+#
+# 1. Set up a secret in your repository named AZURE_WEBAPP_PUBLISH_PROFILE with the value of your Azure publish profile.
+#    For instructions on obtaining the publish profile see: https://docs.microsoft.com/azure/app-service/deploy-github-actions#configure-the-github-secret
+#
+# 2. Change the values for the AZURE_WEBAPP_NAME, AZURE_WEBAPP_PACKAGE_PATH and NODE_VERSION environment variables  (below).
+#
+# For more information on GitHub Actions for Azure, refer to https://github.com/Azure/Actions
+# For more samples to get started with GitHub Action workflows to deploy to Azure, refer to https://github.com/Azure/actions-workflow-samples
+on:
+  release:
+    types: [created]
+
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    steps:
+    
+    - uses: azure/login@v1.1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+
+    - name: Azure CLI script file
+      env: 
+        VM_PASS: ${{ secrets.VM_PASSWD }}
+        GIT_TOK: ${{ secrets.GIT_TOKEN }}
+      uses: azure/CLI@v1
+      with:
+        azcliversion: 2.8.0
+        inlineScript: |
+          az account list
+          #az vm create --resource-group cape-gitaction --name spsvcwrkshp --image OpenLogic:CentOS:7.5:latest --admin-username spsvcs --admin-password  "$VM_PASS"
+          #region Create VM
+          # Create a VM in the resource group
+          Write-Output "Creating VM..."
+          try {
+              az vm create  `
+                --resource-group cape-gitaction `
+                --name spsvcwrkshp `
+                --image OpenLogic:CentOS:7.5:latest `
+                --admin-username spsvcs `
+                --admin-password "$VM_PASS"
+              }
+          catch {
+          Write-Output "VM already exists"
+               }
+          Write-Output "Done creating VM"
+          Write-Output ""
+          #endregion
+          az vm run-command invoke -g cape-gitaction -n spsvcwrkshp --command-id RunShellScript --scripts 'yum install -y git && cd /root/ && git clone https://aktaksh:47e2dd7ae1a4289d29a7153005409ea6a070398c@github.com/biqmind/Biqmind-AKS-Workshop.git && sh -x /root/Biqmind-AKS-Workshop/script/linux_installer.sh'
+          az vm open-port --resource-group cape-gitaction --name spsvcwrkshp --port 4000
+       
+          
